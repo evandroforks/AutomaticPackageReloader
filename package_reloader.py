@@ -80,7 +80,8 @@ class PackageReloaderReloadCommand(sublime_plugin.WindowCommand):
         if not has_package(package):
             raise RuntimeError("{} is not installed.".format(package))
 
-        if sys.version_info >= (3, 8) and package_python_version(package) == "3.3":
+        if (sys.version_info >= (3, 8) and package_python_version(package) == "3.3"
+                and self.name() != "package_reloader33_reload"):
             print("run reloader in python 3.3")
             self.window.run_command(
                 "package_reloader33_reload", {"package": package, "extra_pkgs": extra_pkgs})
