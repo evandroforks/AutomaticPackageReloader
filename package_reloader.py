@@ -2,10 +2,10 @@ import sublime_plugin
 import sublime
 import os
 import sys
-import shutil
 from threading import Thread, Lock
 
-from .reloader import reload_package, load_dummy
+from .reloader import reload_package
+from .reloader.apr33 import ensure_helper, cleanup_helper
 from .utils import ProgressBar, read_config, has_package, package_of, package_python_version
 
 
@@ -93,7 +93,7 @@ class PackageReloaderReloadCommand(sublime_plugin.WindowCommand):
         ).start()
 
     def run_async(self, package, extra_pkgs=[], verbose=None):
-        lock = reload_lock  # In case we're reloading AutoPackageReloader
+        lock = reload_lock  # In case we're reloading AutomaticPackageReloader
         if not lock.acquire(blocking=False):
             print("Reloader is running.")
             return
@@ -110,10 +110,12 @@ class PackageReloaderReloadCommand(sublime_plugin.WindowCommand):
         if not console_opened and open_console:
             self.window.run_command("show_panel", {"panel": "console"})
         dependencies = read_config(package, "dependencies", [])
+        extra_modules = read_config(package, "extra_modules", [])
         if verbose is None:
             verbose = pr_settings.get('verbose')
         try:
-            reload_package(package, dependencies=dependencies, verbose=verbose)
+            reload_package(
+                package, dependencies=dependencies, extra_modules=extra_modules, verbose=verbose)
             if close_console_on_success:
                 self.window.run_command("hide_panel", {"panel": "console"})
 
@@ -141,13 +143,8 @@ class PackageReloaderReloadCommand(sublime_plugin.WindowCommand):
 def plugin_loaded():
     if sys.version_info >= (3, 8):
         APR33 = os.path.join(sublime.packages_path(), "AutomaticPackageReloader33")
-        if not os.path.exists(APR33):
-            os.makedirs(APR33)
-        data = sublime.load_resource("Packages/AutomaticPackageReloader/py33/package_reloader.py")
-        with open(os.path.join(APR33, "package_reloader.py"), 'w') as f:
-            f.write(data.replace("\r\n", "\n"))
-        with open(os.path.join(APR33, ".package_reloader.json"), 'w') as f:
-            f.write("{\"dependencies\" : [\"AutomaticPackageReloader\"]}")
+        if not ensure_helper(APR33):
+            print("AutomaticPackageReloader33 has a custom helper; leaving it unchanged.")
 
 
 def plugin_unloaded():
@@ -157,8 +154,8 @@ def plugin_unloaded():
         # do not remove AutomaticPackageReloader33 if it is being reloaded by APR
         if os.path.exists(APR33) and lock.acquire(blocking=False):
             try:
-                shutil.rmtree(APR33)
-            except Exception:
-                pass
+                cleanup_helper(APR33)
+            except OSError as error:
+                print("Could not remove AutomaticPackageReloader33: {}".format(error))
             finally:
                 lock.release()
