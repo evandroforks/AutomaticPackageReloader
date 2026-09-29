@@ -11,12 +11,19 @@ else:
         that require that dependency, directly or indirectly.
         """
         manager = PackageManager()
-        packages = manager.list_packages()
+        packages = set(manager.list_packages())
+        list_dependencies = getattr(manager, 'list_dependencies', None)
+        everything = packages | (set(list_dependencies()) if list_dependencies else set())
+        get_dependencies = getattr(manager, 'get_dependencies', None)
 
         recursive_dependencies = set()
 
         dependency_relationships = {
-            name: manager.get_libraries(name) for name in packages
+            name: (
+                set(get_dependencies(name)) if get_dependencies else
+                {getattr(library, 'name', library) for library in manager.get_libraries(name)}
+            )
+            for name in everything
         }
 
         def rec(name):
@@ -25,7 +32,7 @@ else:
 
             recursive_dependencies.add(name)
 
-            for pkg_name in packages:
+            for pkg_name in everything:
                 if name in dependency_relationships[pkg_name]:
                     rec(pkg_name)
 

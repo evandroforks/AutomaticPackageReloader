@@ -96,11 +96,15 @@ It is recommended to add the following in your `.sublime-project` file so that <
 
 ### Additional modules
 
-APR would try its best to guess the dependent modules of the package. Sometimes, it may fail to detect all the dependencies. In those cases, developers could specify extra modules to be reloaded in the `.package_reloader.json` file.
+APR tries to find the modules that belong to a package and its dependencies. To
+reload an additional loaded module, list its import name under `extra_modules`
+in the package's `.package_reloader.json` file. Use `dependencies` for package
+names whose modules should also be reloaded.
 
 ```js
 {
-  "dependencies" : ["<module1>", "<module2>"]
+  "dependencies": ["<package name>"],
+  "extra_modules": ["<module import name>"]
 }
 ```
 
