@@ -1,8 +1,8 @@
 {
     // always open console when reloading a package
-    "open_console": false,
+    "open_console": true,
     //  only relevent when "open_console" is false
-    "open_console_on_failure": true,
+    "open_console_on_failure": false,
     // only relevent when "open_console" is true
     "close_console_on_success": false,
     // the default behaviour when saving a document, can be overrided per session
